@@ -2,12 +2,16 @@ from flask import Flask, render_template, request, jsonify
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from pymongo import MongoClient
 from datetime import datetime, timedelta
+import pytz
 import random
 import string
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# Set timezone to Asia/Kolkata
+TIMEZONE = pytz.timezone('Asia/Kolkata')
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
@@ -37,7 +41,7 @@ def update_room_activity(room_code):
     """Update the last_active_at timestamp for a room"""
     rooms_collection.update_one(
         {'room_code': room_code},
-        {'$set': {'last_active_at': datetime.utcnow()}}
+        {'$set': {'last_active_at': datetime.now(TIMEZONE)}}
     )
 
 # HTTP Routes
@@ -76,8 +80,8 @@ def create_room():
             'host_sid': None,  # Will be set when host connects via socket
             'members': [],
             'is_code_visible': True,
-            'created_at': datetime.utcnow(),
-            'last_active_at': datetime.utcnow()
+            'created_at': datetime.now(TIMEZONE),
+            'last_active_at': datetime.now(TIMEZONE)
         }
         
         rooms_collection.insert_one(room_doc)
@@ -275,7 +279,7 @@ def handle_send_message(data):
         message_data = {
             'username': sender['username'],
             'message': message,
-            'timestamp': datetime.utcnow().isoformat(),
+            'timestamp': datetime.now(TIMEZONE).isoformat(),
             'is_own': False
         }
         
