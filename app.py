@@ -99,10 +99,11 @@ def create_room():
 
 @app.route('/api/validate_room', methods=['POST'])
 def validate_room():
-    """Validate if a room code exists and has space"""
+    """Validate if a room code exists, has space, and username is available"""
     try:
         data = request.json
         room_code = data.get('room_code', '').strip().upper()
+        username = data.get('username', '').strip()
         
         if not room_code:
             return jsonify({'valid': False, 'reason': 'Room code is required'})
@@ -114,6 +115,11 @@ def validate_room():
         
         if len(room.get('members', [])) >= 5:
             return jsonify({'valid': False, 'reason': 'Room is full'})
+        
+        # Check if username is provided and if it's already taken
+        if username:
+            if any(m['username'] == username for m in room.get('members', [])):
+                return jsonify({'valid': False, 'reason': 'Username already taken in this room'})
         
         return jsonify({'valid': True})
     

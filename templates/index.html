@@ -317,7 +317,10 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ room_code: roomCode })
+                    body: JSON.stringify({
+                        room_code: roomCode,
+                        username: username
+                    })
                 });
 
                 const data = await response.json();
