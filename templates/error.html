@@ -20,22 +20,22 @@
         }
 
         .gradient-bg {
-            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            background: linear-gradient(135deg, #0f1419 0%, #1a202c 100%);
         }
     </style>
 </head>
 
 <body class="gradient-bg min-h-screen flex items-center justify-center p-4">
-    <div class="bg-gray-800 rounded-3xl p-10 max-w-md w-full text-center shadow-2xl border border-gray-700">
-        <div class="inline-block p-4 bg-red-900/50 rounded-full mb-4">
+    <div class="bg-gray-800/95 rounded-3xl p-10 max-w-md w-full text-center shadow-2xl border border-gray-700/50">
+        <div class="inline-block p-4 bg-red-900/30 rounded-full mb-4">
             <i class="fas fa-exclamation-circle text-5xl text-red-400"></i>
         </div>
 
         <h1 class="text-3xl font-bold text-gray-100 mb-3">Oops!</h1>
-        <p class="text-gray-300 text-lg mb-6">{{ message }}</p>
+        <p class="text-gray-400 text-lg mb-6">{{ message }}</p>
 
         <a href="/"
-            class="inline-block bg-gradient-to-r from-teal-600 to-green-600 text-white font-semibold px-8 py-3 rounded-xl hover:shadow-lg transition-all">
+            class="inline-block bg-emerald-600/90 hover:bg-emerald-600 text-white font-semibold px-8 py-3 rounded-xl hover:shadow-lg transition-all">
             <i class="fas fa-home mr-2"></i>Back to Home
         </a>
     </div>

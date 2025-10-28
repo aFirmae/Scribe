@@ -25,8 +25,12 @@ socket.on('room_info', (data) => {
     // Show host controls if user is host
     if (isHost) {
         document.getElementById('hostActions').classList.remove('hidden');
+        document.getElementById('nonHostLeaveBtn').classList.add('hidden');
         document.getElementById('editRoomNameBtn').classList.remove('hidden');
         document.getElementById('toggleCodeBtn').classList.remove('hidden');
+    } else {
+        document.getElementById('hostActions').classList.add('hidden');
+        document.getElementById('nonHostLeaveBtn').classList.remove('hidden');
     }
 
     // Update code visibility
@@ -45,14 +49,14 @@ socket.on('update_user_list', (users) => {
 
     users.forEach(user => {
         const userDiv = document.createElement('div');
-        userDiv.className = 'flex items-center space-x-3 p-3 bg-gray-700/50 rounded-lg hover:bg-gray-700 transition-colors';
+        userDiv.className = 'flex items-center space-x-3 p-3 bg-gray-700/30 rounded-lg hover:bg-gray-700/50 transition-colors';
 
         userDiv.innerHTML = `
-            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-teal-600 to-green-600 flex items-center justify-center text-white font-semibold">
+            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-emerald-600 to-emerald-500 flex items-center justify-center text-white font-semibold">
                 ${user.username.charAt(0).toUpperCase()}
             </div>
             <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-gray-200 truncate">
+                <p class="text-sm font-medium text-gray-300 truncate">
                     ${user.username}
                     ${user.username === username ? ' (You)' : ''}
                 </p>
@@ -98,6 +102,7 @@ socket.on('new_host', (data) => {
     if (socket.id === data.sid) {
         isHost = true;
         document.getElementById('hostActions').classList.remove('hidden');
+        document.getElementById('nonHostLeaveBtn').classList.add('hidden');
         document.getElementById('editRoomNameBtn').classList.remove('hidden');
         document.getElementById('toggleCodeBtn').classList.remove('hidden');
         addSystemMessage('You are now the host of this room.');
@@ -225,11 +230,11 @@ function addMessage(data) {
     messageDiv.innerHTML = `
         <div class="flex ${alignment} mb-2">
             <div class="max-w-[70%] ${isOwn ? 'order-2' : 'order-1'}">
-                ${!isOwn ? `<p class="text-xs font-medium text-gray-600 mb-1 ml-2">${data.username}</p>` : ''}
-                <div class="${isOwn ? 'bg-green-500 text-white' : 'bg-white text-gray-800 border border-gray-200'} rounded-2xl px-4 py-2.5 shadow-sm">
+                ${!isOwn ? `<p class="text-xs font-medium text-emerald-500 mb-1 ml-2">${data.username}</p>` : ''}
+                <div class="${isOwn ? 'bg-emerald-500/90 text-white' : 'bg-white text-gray-800 border border-gray-300/50'} rounded-2xl px-4 py-2.5 shadow-sm">
                     <p class="text-sm whitespace-pre-wrap break-words">${escapeHtml(data.message)}</p>
                 </div>
-                <p class="text-xs text-gray-500 mt-1 ${isOwn ? 'text-right' : 'text-left'} ${isOwn ? 'mr-2' : 'ml-2'}">
+                <p class="text-xs text-emerald-600/70 mt-1 ${isOwn ? 'text-right' : 'text-left'} ${isOwn ? 'mr-2' : 'ml-2'}">
                     ${timestamp}
                 </p>
             </div>
@@ -246,7 +251,7 @@ function addSystemMessage(text) {
     messageDiv.className = 'message-enter flex justify-center my-4';
 
     messageDiv.innerHTML = `
-        <div class="bg-gray-300 text-gray-700 text-xs px-4 py-2 rounded-full shadow-sm">
+        <div class="bg-gray-400/90 text-gray-700 text-xs px-4 py-2 rounded-full shadow-sm">
             <i class="fas fa-info-circle mr-1"></i>${escapeHtml(text)}
         </div>
     `;

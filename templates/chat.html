@@ -86,11 +86,11 @@
     </style>
 </head>
 
-<body class="bg-gray-900 h-screen overflow-hidden">
+<body class="bg-gray-800 h-screen overflow-hidden">
 
     <!-- Mobile Menu Toggle -->
     <button id="mobileMenuBtn"
-        class="lg:hidden fixed top-4 left-4 z-50 bg-gray-800 p-3 rounded-full shadow-lg text-green-400 hover:bg-gray-700 transition-colors border border-gray-700">
+        class="lg:hidden fixed top-4 left-4 z-50 bg-gray-700/80 p-3 rounded-full shadow-lg text-emerald-400 hover:bg-gray-700 transition-colors border border-gray-600/50">
         <i class="fas fa-bars text-xl"></i>
     </button>
 
@@ -99,16 +99,16 @@
 
         <!-- Sidebar - Desktop: static, Mobile: overlay -->
         <div id="sidebar"
-            class="sidebar-mobile lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-40 w-80 bg-gray-800 border-r border-gray-700 flex flex-col">
+            class="sidebar-mobile lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-40 w-80 bg-gray-800/95 border-r border-gray-700/50 flex flex-col">
 
             <!-- Sidebar Header -->
-            <div class="gradient-bg p-6 text-white border-b border-gray-700">
+            <div class="gradient-bg p-6 text-white border-b border-gray-700/50">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center space-x-2">
-                        <i class="fas fa-comments text-2xl text-green-400"></i>
+                        <i class="fas fa-comments text-2xl text-emerald-400"></i>
                         <span class="text-xl font-bold">Scribe</span>
                     </div>
-                    <button id="closeSidebarBtn" class="lg:hidden text-gray-400 hover:text-white">
+                    <button id="closeSidebarBtn" class="lg:hidden text-gray-500 hover:text-gray-300">
                         <i class="fas fa-times text-xl"></i>
                     </button>
                 </div>
@@ -116,26 +116,27 @@
                 <!-- Room Name -->
                 <div class="flex items-center justify-between">
                     <h2 id="roomName" class="text-xl font-semibold truncate flex-1"></h2>
-                    <button id="editRoomNameBtn" class="hidden ml-2 text-gray-300 hover:text-white transition-colors">
+                    <button id="editRoomNameBtn"
+                        class="hidden ml-2 text-gray-400 hover:text-gray-200 transition-colors">
                         <i class="fas fa-edit"></i>
                     </button>
                 </div>
             </div>
 
             <!-- Room Code Section -->
-            <div class="p-4 bg-gray-700/50 border-b border-gray-700">
+            <div class="p-4 bg-gray-700/30 border-b border-gray-700/50">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-xs text-gray-400 mb-1">Room Code</p>
+                        <p class="text-xs text-gray-500 mb-1">Room Code</p>
                         <div class="flex items-center space-x-2">
-                            <span id="roomCode" class="text-xl font-bold text-green-400 tracking-wider"></span>
-                            <button id="copyCodeBtn" class="text-green-400 hover:text-green-300 transition-colors"
+                            <span id="roomCode" class="text-xl font-bold text-emerald-400 tracking-wider"></span>
+                            <button id="copyCodeBtn" class="text-emerald-400 hover:text-emerald-300 transition-colors"
                                 title="Copy code">
                                 <i class="fas fa-copy"></i>
                             </button>
                         </div>
                     </div>
-                    <button id="toggleCodeBtn" class="hidden text-gray-400 hover:text-gray-300 transition-colors"
+                    <button id="toggleCodeBtn" class="hidden text-gray-500 hover:text-gray-400 transition-colors"
                         title="Toggle code visibility">
                         <i id="codeVisibilityIcon" class="fas fa-eye text-xl"></i>
                     </button>
@@ -144,7 +145,7 @@
 
             <!-- User List -->
             <div class="flex-1 overflow-y-auto custom-scrollbar p-4">
-                <h3 class="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">
+                <h3 class="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wider">
                     Participants (<span id="userCount">0</span>/5)
                 </h3>
                 <div id="userList" class="space-y-2">
@@ -152,34 +153,40 @@
                 </div>
             </div>
 
-            <!-- Host Actions -->
-            <div id="hostActions" class="hidden p-4 border-t border-gray-700">
-                <button id="deleteRoomBtn"
-                    class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center space-x-2">
-                    <i class="fas fa-trash"></i>
-                    <span>Delete Room</span>
-                </button>
-            </div>
+            <!-- Action Buttons -->
+            <div class="p-4 border-t border-gray-700/50">
+                <!-- Host Actions (side by side) -->
+                <div id="hostActions" class="hidden flex space-x-2 mb-3">
+                    <button id="deleteRoomBtn"
+                        class="flex-1 bg-red-600/80 hover:bg-red-600 text-white font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center space-x-2">
+                        <i class="fas fa-trash"></i>
+                        <span>Delete</span>
+                    </button>
+                    <a href="/" id="hostLeaveBtn"
+                        class="flex-1 bg-gray-700/50 hover:bg-gray-700 text-gray-300 font-semibold py-2.5 rounded-lg transition-colors flex items-center justify-center space-x-2">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Leave</span>
+                    </a>
+                </div>
 
-            <!-- Leave Room Button -->
-            <div class="p-4 border-t border-gray-700">
-                <a href="/"
-                    class="block w-full bg-gray-700 hover:bg-gray-600 text-gray-200 font-semibold py-2.5 rounded-lg transition-colors text-center">
-                    <i class="fas fa-sign-out-alt mr-2"></i>Leave Room
+                <!-- Non-host Leave Button (full width) -->
+                <a href="/" id="nonHostLeaveBtn"
+                    class="block w-full bg-gray-700/50 hover:bg-gray-700 text-gray-300 font-semibold py-2.5 rounded-lg transition-colors text-center">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Leave
                 </a>
             </div>
         </div>
 
         <!-- Mobile Sidebar Overlay -->
-        <div id="sidebarOverlay" class="lg:hidden hidden fixed inset-0 bg-black/70 z-30"></div>
+        <div id="sidebarOverlay" class="lg:hidden hidden fixed inset-0 bg-black/60 z-30"></div>
 
         <!-- Main Chat Area -->
         <div class="flex-1 flex flex-col h-screen">
 
             <!-- Chat Header (Mobile only) -->
-            <div class="lg:hidden gradient-bg text-white p-4 pl-16 border-b border-gray-700">
+            <div class="lg:hidden gradient-bg text-white p-4 pl-16 border-b border-gray-700/50">
                 <h2 id="roomNameMobile" class="text-lg font-semibold truncate"></h2>
-                <p class="text-sm text-gray-300">
+                <p class="text-sm text-gray-400">
                     <span id="userCountMobile">0</span> participants
                 </p>
             </div>
@@ -190,15 +197,15 @@
             </div>
 
             <!-- Message Input -->
-            <div class="bg-gray-800 border-t border-gray-700 p-4">
+            <div class="bg-gray-800/95 border-t border-gray-700/50 p-4">
                 <form id="messageForm" class="flex items-end space-x-3">
                     <div class="flex-1 relative">
                         <textarea id="messageInput" placeholder="Type your message..."
-                            class="message-input w-full px-4 py-3 pr-12 bg-gray-700 border border-gray-600 text-gray-100 placeholder-gray-400 rounded-2xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none resize-none"
+                            class="message-input w-full px-4 py-3 pr-12 bg-gray-700/50 border border-gray-600/50 text-gray-100 placeholder-gray-500 rounded-2xl focus:ring-2 focus:ring-emerald-500/50 focus:border-transparent outline-none resize-none"
                             rows="1"></textarea>
                     </div>
                     <button type="submit"
-                        class="bg-gradient-to-r from-teal-600 to-green-600 text-white p-3 rounded-full hover:shadow-lg transition-all flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="bg-emerald-600/90 hover:bg-emerald-600 text-white p-3 rounded-full hover:shadow-lg transition-all flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                         id="sendBtn">
                         <i class="fas fa-paper-plane text-lg"></i>
                     </button>
@@ -209,19 +216,19 @@
 
     <!-- Edit Room Name Modal -->
     <div id="editRoomModal"
-        class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <div class="bg-gray-800 rounded-3xl p-8 max-w-md w-full shadow-2xl border border-gray-700">
+        class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-gray-800/95 rounded-3xl p-8 max-w-md w-full shadow-2xl border border-gray-700/50">
             <h3 class="text-2xl font-bold text-gray-100 mb-4">Edit Room Name</h3>
             <form id="editRoomForm">
                 <input type="text" id="newRoomName" maxlength="50" placeholder="Enter new room name"
-                    class="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-gray-100 placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none mb-4">
+                    class="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 text-gray-100 placeholder-gray-500 rounded-xl focus:ring-2 focus:ring-emerald-500/50 focus:border-transparent outline-none mb-4">
                 <div class="flex space-x-3">
                     <button type="button" onclick="closeEditRoomModal()"
-                        class="flex-1 bg-gray-700 hover:bg-gray-600 text-gray-200 font-semibold py-2.5 rounded-xl transition-colors">
+                        class="flex-1 bg-gray-700/50 hover:bg-gray-700 text-gray-300 font-semibold py-2.5 rounded-xl transition-colors">
                         Cancel
                     </button>
                     <button type="submit"
-                        class="flex-1 bg-gradient-to-r from-teal-600 to-green-600 text-white font-semibold py-2.5 rounded-xl hover:shadow-lg transition-all">
+                        class="flex-1 bg-emerald-600/90 hover:bg-emerald-600 text-white font-semibold py-2.5 rounded-xl hover:shadow-lg transition-all">
                         Save
                     </button>
                 </div>
