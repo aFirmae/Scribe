@@ -111,16 +111,22 @@ socket.on('new_host', (data) => {
 
 // Handle room deletion
 socket.on('room_deleted', (data) => {
-    alert(data.message);
-    window.location.href = '/';
+    // Redirect to error page showing the room was deleted
+    window.location.href = '/error?message=' + encodeURIComponent(data.message || 'This room has been deleted by the host');
 });
 
 // Handle errors
 socket.on('error', (data) => {
     console.error('Socket error:', data);
-    alert(data.message);
-    if (data.message.includes('not found') || data.message.includes('full')) {
-        window.location.href = '/';
+
+    // For critical errors (room not found, room full), redirect to error page
+    if (data.message.includes('not found')) {
+        window.location.href = '/error?message=' + encodeURIComponent('Room not found');
+    } else if (data.message.includes('full')) {
+        window.location.href = '/error?message=' + encodeURIComponent('Room is full');
+    } else {
+        // For other errors, show as system message
+        addSystemMessage('Error: ' + data.message);
     }
 });
 

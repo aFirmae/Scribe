@@ -50,6 +50,12 @@ def index():
     """Serve the homepage"""
     return render_template('index.html')
 
+@app.route('/error')
+def error_page():
+    """Serve the error page with custom message"""
+    message = request.args.get('message', 'An error occurred')
+    return render_template('error.html', message=message)
+
 @app.route('/chat/<room_code>')
 def chat_room(room_code):
     """Serve the chat room page"""
