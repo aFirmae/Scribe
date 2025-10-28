@@ -45,19 +45,19 @@ socket.on('update_user_list', (users) => {
 
     users.forEach(user => {
         const userDiv = document.createElement('div');
-        userDiv.className = 'flex items-center space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors';
+        userDiv.className = 'flex items-center space-x-3 p-3 bg-gray-700/50 rounded-lg hover:bg-gray-700 transition-colors';
 
         userDiv.innerHTML = `
-            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold">
+            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-teal-600 to-green-600 flex items-center justify-center text-white font-semibold">
                 ${user.username.charAt(0).toUpperCase()}
             </div>
             <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-gray-900 truncate">
+                <p class="text-sm font-medium text-gray-200 truncate">
                     ${user.username}
                     ${user.username === username ? ' (You)' : ''}
                 </p>
             </div>
-            ${user.is_host ? '<i class="fas fa-crown text-yellow-500" title="Host"></i>' : ''}
+            ${user.is_host ? '<i class="fas fa-crown text-yellow-400" title="Host"></i>' : ''}
         `;
 
         userListDiv.appendChild(userDiv);
@@ -226,10 +226,10 @@ function addMessage(data) {
         <div class="flex ${alignment} mb-2">
             <div class="max-w-[70%] ${isOwn ? 'order-2' : 'order-1'}">
                 ${!isOwn ? `<p class="text-xs font-medium text-gray-600 mb-1 ml-2">${data.username}</p>` : ''}
-                <div class="${isOwn ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white' : 'bg-white text-gray-800'} rounded-2xl px-4 py-2.5 shadow-sm">
+                <div class="${isOwn ? 'bg-green-500 text-white' : 'bg-white text-gray-800 border border-gray-200'} rounded-2xl px-4 py-2.5 shadow-sm">
                     <p class="text-sm whitespace-pre-wrap break-words">${escapeHtml(data.message)}</p>
                 </div>
-                <p class="text-xs text-gray-400 mt-1 ${isOwn ? 'text-right' : 'text-left'} ${isOwn ? 'mr-2' : 'ml-2'}">
+                <p class="text-xs text-gray-500 mt-1 ${isOwn ? 'text-right' : 'text-left'} ${isOwn ? 'mr-2' : 'ml-2'}">
                     ${timestamp}
                 </p>
             </div>
@@ -246,7 +246,7 @@ function addSystemMessage(text) {
     messageDiv.className = 'message-enter flex justify-center my-4';
 
     messageDiv.innerHTML = `
-        <div class="bg-gray-200 text-gray-600 text-xs px-4 py-2 rounded-full">
+        <div class="bg-gray-300 text-gray-700 text-xs px-4 py-2 rounded-full shadow-sm">
             <i class="fas fa-info-circle mr-1"></i>${escapeHtml(text)}
         </div>
     `;
