@@ -53,7 +53,7 @@ def index():
 @app.route('/error')
 def error_page():
     """Serve the error page with custom message"""
-    message = request.args.get('message', 'An error occurred')
+    message = request.args.get('message', 'An error occurred. The room may have been deleted or you may have been disconnected.')
     return render_template('error.html', message=message)
 
 @app.route('/chat/<room_code>')
@@ -116,10 +116,10 @@ def validate_room():
         if len(room.get('members', [])) >= 5:
             return jsonify({'valid': False, 'reason': 'Room is full'})
         
-        # Check if username is provided and if it's already taken
-        if username:
-            if any(m['username'] == username for m in room.get('members', [])):
-                return jsonify({'valid': False, 'reason': 'Username already taken in this room'})
+        # Check if username is provided
+        # if username:
+        #     if any(m['username'] == username for m in room.get('members', [])):
+        #         return jsonify({'valid': False, 'reason': 'Username already taken in this room'})
         
         return jsonify({'valid': True})
     
@@ -204,27 +204,39 @@ def handle_join_room(data):
             return
         
         # Check if username already exists in room
-        if any(m['username'] == username for m in room['members']):
-            emit('error', {'message': 'Username already taken in this room'})
-            return
+        existing_member = next((m for m in room['members'] if m['username'] == username), None)
         
-        # Add member to room
         member = {'username': username, 'sid': request.sid}
         
-        # If this is the first member, make them host
-        if not room['members']:
+        if existing_member:
+            # User is rejoining/taking over. Update their SID.
             rooms_collection.update_one(
-                {'room_code': room_code},
-                {
-                    '$set': {'host_sid': request.sid},
-                    '$push': {'members': member}
-                }
+                {'room_code': room_code, 'members.username': username},
+                {'$set': {'members.$.sid': request.sid}}
             )
+            
+            # If they were host, update host_sid
+            if room['host_sid'] == existing_member['sid']:
+                rooms_collection.update_one(
+                    {'room_code': room_code},
+                    {'$set': {'host_sid': request.sid}}
+                )
         else:
-            rooms_collection.update_one(
-                {'room_code': room_code},
-                {'$push': {'members': member}}
-            )
+            # New member
+            # If this is the first member, make them host
+            if not room['members']:
+                rooms_collection.update_one(
+                    {'room_code': room_code},
+                    {
+                        '$set': {'host_sid': request.sid},
+                        '$push': {'members': member}
+                    }
+                )
+            else:
+                rooms_collection.update_one(
+                    {'room_code': room_code},
+                    {'$push': {'members': member}}
+                )
         
         # Join Socket.IO room
         join_room(room_code)
@@ -366,4 +378,4 @@ def handle_host_action(data):
         emit('error', {'message': 'Failed to perform action'})
 
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    socketio.run(app, host='0.0.0.0', port=8000, debug=True)
