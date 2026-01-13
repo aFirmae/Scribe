@@ -49,16 +49,25 @@ socket.on('update_user_list', (users) => {
 
     users.forEach(user => {
         const userDiv = document.createElement('div');
-        userDiv.className = 'flex items-center space-x-3 p-3 bg-gray-700/30 rounded-lg hover:bg-gray-700/50 transition-colors';
+        const opacityClass = user.is_active ? '' : 'opacity-50';
+        userDiv.className = `flex items-center space-x-3 p-3 bg-gray-700/30 rounded-lg hover:bg-gray-700/50 transition-colors ${opacityClass}`;
+
+        const statusIndicator = user.is_active 
+            ? '<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-gray-800 absolute bottom-0 right-0"></span>'
+            : '<span class="w-2.5 h-2.5 rounded-full bg-gray-500 border-2 border-gray-800 absolute bottom-0 right-0"></span>';
 
         userDiv.innerHTML = `
-            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-emerald-600 to-emerald-500 flex items-center justify-center text-white font-semibold">
-                ${user.username.charAt(0).toUpperCase()}
+            <div class="relative">
+                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-emerald-600 to-emerald-500 flex items-center justify-center text-white font-semibold">
+                    ${user.username.charAt(0).toUpperCase()}
+                </div>
+                ${statusIndicator}
             </div>
             <div class="flex-1 min-w-0">
                 <p class="text-sm font-medium text-gray-300 truncate">
                     ${user.username}
                     ${user.username === username ? ' (You)' : ''}
+                    ${!user.is_active ? ' (Away)' : ''}
                 </p>
             </div>
             ${user.is_host ? '<i class="fas fa-crown text-yellow-400" title="Host"></i>' : ''}
@@ -107,6 +116,22 @@ socket.on('new_host', (data) => {
         document.getElementById('toggleCodeBtn').classList.remove('hidden');
         addSystemMessage('You are now the host of this room.');
     }
+    
+    // Clear grace period banner if it was active
+    clearGracePeriodTimer();
+});
+
+// Handle grace period start
+socket.on('host_disconnect_grace', (data) => {
+    console.log('Host disconnected, grace period started:', data);
+    showGracePeriodBanner(data.seconds_left, data.username);
+});
+
+// Handle host return
+socket.on('host_returned', () => {
+    console.log('Host returned');
+    clearGracePeriodTimer();
+    addSystemMessage('The host has reconnected.');
 });
 
 // Handle room deletion
@@ -275,16 +300,22 @@ function updateCodeVisibility(visible) {
     const icon = document.getElementById('codeVisibilityIcon');
     const roomCodeElement = document.getElementById('roomCode');
 
-    if (!isHost && !visible) {
+    if (!visible) {
         roomCodeElement.textContent = '••••••';
         document.getElementById('copyCodeBtn').style.display = 'none';
+        
+        // Host can still see the toggle button
+        if (isHost) {
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        }
     } else {
         roomCodeElement.textContent = roomCode;
         document.getElementById('copyCodeBtn').style.display = 'inline-block';
 
         if (isHost) {
-            icon.classList.remove('fa-eye', 'fa-eye-slash');
-            icon.classList.add(visible ? 'fa-eye' : 'fa-eye-slash');
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
         }
     }
 }
@@ -325,3 +356,44 @@ socket.on('reconnect', () => {
         username: username
     });
 });
+
+let gracePeriodInterval;
+
+function showGracePeriodBanner(seconds, oldHostName) {
+    const banner = document.getElementById('gracePeriodBanner');
+    const textElement = document.getElementById('gracePeriodText');
+    
+    banner.classList.remove('hidden');
+    
+    let timeLeft = seconds;
+    
+    // Update immediately
+    updateTimerText(timeLeft);
+    
+    // Clear existing interval
+    if (gracePeriodInterval) clearInterval(gracePeriodInterval);
+    
+    // Start countdown
+    gracePeriodInterval = setInterval(() => {
+        timeLeft--;
+        
+        if (timeLeft <= 0) {
+            clearInterval(gracePeriodInterval);
+            banner.classList.add('hidden');
+        } else {
+            updateTimerText(timeLeft);
+        }
+    }, 1000);
+    
+    function updateTimerText(sec) {
+        const minutes = Math.floor(sec / 60);
+        const remainingSeconds = Math.floor(sec % 60);
+        textElement.textContent = `${oldHostName} disconnected. New host in ${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }
+}
+
+function clearGracePeriodTimer() {
+    const banner = document.getElementById('gracePeriodBanner');
+    banner.classList.add('hidden');
+    if (gracePeriodInterval) clearInterval(gracePeriodInterval);
+}

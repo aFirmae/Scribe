@@ -197,6 +197,17 @@
 
             <!-- Messages Container -->
             <div id="messagesContainer" class="flex-1 overflow-y-auto custom-scrollbar p-4 lg:p-6 space-y-6">
+                <!-- Grace Period Banner -->
+                <div id="gracePeriodBanner" class="hidden bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 px-4 py-3 rounded-xl mb-4 flex items-center justify-between">
+                    <div class="flex items-center">
+                        <i class="fas fa-clock mr-3 text-yellow-400"></i>
+                        <div>
+                            <p class="font-semibold text-sm">Host Disconnected</p>
+                            <p class="text-xs text-yellow-500/80" id="gracePeriodText">Host rights will transfer in 10:00</p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Messages will be inserted here -->
             </div>
 

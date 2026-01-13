@@ -6,12 +6,15 @@ import pytz
 import random
 import string
 import os
+import threading
+import time
 from dotenv import load_dotenv
 
 load_dotenv()
 
 # Set timezone to Asia/Kolkata
 TIMEZONE = pytz.timezone('Asia/Kolkata')
+GRACE_PERIOD_SECONDS = 600  # 10 minutes
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
@@ -85,7 +88,7 @@ def create_room():
             'room_name': f"{username}'s Room",
             'host_sid': None,  # Will be set when host connects via socket
             'members': [],
-            'is_code_visible': True,
+            'is_code_visible': False,
             'created_at': datetime.now(TIMEZONE),
             'last_active_at': datetime.now(TIMEZONE)
         }
@@ -134,57 +137,54 @@ def handle_connect():
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    """Handle client disconnection"""
+    """Handle client disconnection with grace period"""
     print(f'Client disconnected: {request.sid}')
     
-    # Find and update room where this user was a member
+    # Find room where this user is a member
     room = rooms_collection.find_one({'members.sid': request.sid})
     
     if room:
         room_code = room['room_code']
         
-        # Find the member who disconnected
+        # Update member status to disconnected
+        rooms_collection.update_one(
+            {'room_code': room_code, 'members.sid': request.sid},
+            {'$set': {
+                'members.$.status': 'disconnected',
+                'members.$.last_seen': datetime.now(TIMEZONE)
+            }}
+        )
+        
+        # Get updated room to check host status
+        room = rooms_collection.find_one({'room_code': room_code})
         member = next((m for m in room['members'] if m['sid'] == request.sid), None)
         
         if member:
             username = member['username']
             
-            # Remove member from room
-            rooms_collection.update_one(
-                {'room_code': room_code},
-                {'$pull': {'members': {'sid': request.sid}}}
-            )
-            
-            # Check if room is now empty
-            updated_room = rooms_collection.find_one({'room_code': room_code})
-            
-            if not updated_room['members']:
-                # Delete empty room
-                rooms_collection.delete_one({'room_code': room_code})
-                print(f'Deleted empty room: {room_code}')
-            else:
-                # If disconnected user was host, assign new host
-                if room['host_sid'] == request.sid:
-                    new_host_sid = updated_room['members'][0]['sid']
-                    rooms_collection.update_one(
-                        {'room_code': room_code},
-                        {'$set': {'host_sid': new_host_sid}}
-                    )
-                    emit('new_host', {'sid': new_host_sid}, room=room_code)
-                
-                # Notify others
+            # If host disconnected, notify others about potential transfer
+            if room['host_sid'] == request.sid:
                 emit('system_message', {
-                    'text': f'{username} has left the chat.'
+                    'text': f'Host {username} has disconnected. Room will close or transfer host in 10 minutes.'
                 }, room=room_code)
                 
-                # Send updated user list
-                updated_room = rooms_collection.find_one({'room_code': room_code})
-                user_list = [{
+                emit('host_disconnect_grace', {
+                    'username': username,
+                    'is_host_disconnect': True,
+                    'seconds_left': GRACE_PERIOD_SECONDS
+                }, room=room_code)
+
+            # Update user list to show disconnected status
+            user_list = []
+            for m in room['members']:
+                is_active = m.get('status', 'active') == 'active'
+                user_list.append({
                     'username': m['username'],
-                    'is_host': m['sid'] == updated_room['host_sid']
-                } for m in updated_room['members']]
-                
-                emit('update_user_list', user_list, room=room_code)
+                    'is_host': m['sid'] == room['host_sid'],
+                    'is_active': is_active
+                })
+            
+            emit('update_user_list', user_list, room=room_code)
 
 @socketio.on('join_room')
 def handle_join_room(data):
@@ -206,36 +206,52 @@ def handle_join_room(data):
         # Check if username already exists in room
         existing_member = next((m for m in room['members'] if m['username'] == username), None)
         
-        member = {'username': username, 'sid': request.sid}
+        member_data = {
+            'username': username,
+            'sid': request.sid,
+            'status': 'active',
+            'last_seen': datetime.now(TIMEZONE)
+        }
+        
+        is_reconnect = False
         
         if existing_member:
-            # User is rejoining/taking over. Update their SID.
+            # User is rejoining
             rooms_collection.update_one(
                 {'room_code': room_code, 'members.username': username},
-                {'$set': {'members.$.sid': request.sid}}
+                {'$set': {
+                    'members.$.sid': request.sid,
+                    'members.$.status': 'active',
+                    'members.$.last_seen': datetime.now(TIMEZONE)
+                }}
             )
+            is_reconnect = True
             
             # If they were host, update host_sid
-            if room['host_sid'] == existing_member['sid']:
+            if room['host_sid'] == existing_member['sid']: # Check against old SID
                 rooms_collection.update_one(
                     {'room_code': room_code},
                     {'$set': {'host_sid': request.sid}}
                 )
+                emit('host_returned', {}, room=room_code)
         else:
             # New member
-            # If this is the first member, make them host
-            if not room['members']:
+            # If this is the first member (or all others are disconnected/gone), make them host
+            # actually logic: if no host_sid or host is invalid, or just simple first join
+            is_first = not room['members']
+            
+            if is_first:
                 rooms_collection.update_one(
                     {'room_code': room_code},
                     {
                         '$set': {'host_sid': request.sid},
-                        '$push': {'members': member}
+                        '$push': {'members': member_data}
                     }
                 )
             else:
                 rooms_collection.update_one(
                     {'room_code': room_code},
-                    {'$push': {'members': member}}
+                    {'$push': {'members': member_data}}
                 )
         
         # Join Socket.IO room
@@ -256,16 +272,45 @@ def handle_join_room(data):
             'username': username
         })
         
-        # Notify others about new user
-        emit('system_message', {
-            'text': f'{username} has joined the chat.'
-        }, room=room_code, skip_sid=request.sid)
+        # Check if host is currently disconnected
+        host_sid = updated_room.get('host_sid')
+        host_member = next((m for m in updated_room['members'] if m['sid'] == host_sid), None)
+        
+        if host_member and host_member.get('status') == 'disconnected':
+            last_seen = host_member.get('last_seen', datetime.min.replace(tzinfo=TIMEZONE))
+            # Ensure last_seen is timezone aware
+            if last_seen.tzinfo is None:
+                last_seen = pytz.utc.localize(last_seen).astimezone(TIMEZONE)
+                
+            elapsed = (datetime.now(TIMEZONE) - last_seen).total_seconds()
+            remaining = max(0, GRACE_PERIOD_SECONDS - elapsed)
+            
+            if remaining > 0:
+                emit('host_disconnect_grace', {
+                    'username': host_member['username'],
+                    'is_host_disconnect': True,
+                    'seconds_left': remaining
+                }, room=request.sid) # Send only to the joining user
+        
+        # Notify others
+        if is_reconnect:
+             emit('system_message', {
+                'text': f'{username} has reconnected.'
+            }, room=room_code, skip_sid=request.sid)
+        else:
+            emit('system_message', {
+                'text': f'{username} has joined the chat.'
+            }, room=room_code, skip_sid=request.sid)
         
         # Send updated user list to all
-        user_list = [{
-            'username': m['username'],
-            'is_host': m['sid'] == updated_room['host_sid']
-        } for m in updated_room['members']]
+        user_list = []
+        for m in updated_room['members']:
+            is_active = m.get('status', 'active') == 'active'
+            user_list.append({
+                'username': m['username'],
+                'is_host': m['sid'] == updated_room['host_sid'],
+                'is_active': is_active
+            })
         
         emit('update_user_list', user_list, room=room_code)
         
@@ -376,6 +421,95 @@ def handle_host_action(data):
     except Exception as e:
         print(f'Error in host_action: {e}')
         emit('error', {'message': 'Failed to perform action'})
+
+def check_grace_periods():
+    """Background task to check for expired grace periods"""
+    while True:
+        try:
+            # Check every 30 seconds
+            time.sleep(30)
+            
+            # Find rooms with disconnected members
+            rooms = rooms_collection.find({'members.status': 'disconnected'})
+            
+            for room in rooms:
+                room_code = room['room_code']
+                updated = False
+                host_changed = False
+                
+                # Check each member
+                members_to_remove = []
+                for member in room['members']:
+                    if member.get('status') == 'disconnected':
+                        last_seen = member.get('last_seen', datetime.min.replace(tzinfo=TIMEZONE))
+                        # Ensure last_seen is timezone aware
+                        if last_seen.tzinfo is None:
+                            last_seen = pytz.utc.localize(last_seen).astimezone(TIMEZONE)
+                            
+                        if (datetime.now(TIMEZONE) - last_seen).total_seconds() > GRACE_PERIOD_SECONDS:
+                            members_to_remove.append(member['sid'])
+                            
+                if members_to_remove:
+                    # Remove expired members
+                    rooms_collection.update_one(
+                        {'room_code': room_code},
+                        {'$pull': {'members': {'sid': {'$in': members_to_remove}}}}
+                    )
+                    updated = True
+                    
+                    # Log removal
+                    expired_usernames = [m['username'] for m in room['members'] if m['sid'] in members_to_remove]
+                    print(f"Removed expired members from {room_code}: {expired_usernames}")
+                    
+                # Re-fetch room to check if empty or needs host update
+                if updated:
+                    updated_room = rooms_collection.find_one({'room_code': room_code})
+                    
+                    if not updated_room['members']:
+                        rooms_collection.delete_one({'room_code': room_code})
+                        print(f"Deleted empty room after grace period: {room_code}")
+                        continue
+                        
+                    # Check if host was removed
+                    if room['host_sid'] in members_to_remove:
+                        # Assign new host (first active member, or just first member)
+                        # Prefer active members
+                        new_host = next((m for m in updated_room['members'] if m.get('status') == 'active'), updated_room['members'][0])
+                        
+                        rooms_collection.update_one(
+                            {'room_code': room_code},
+                            {'$set': {'host_sid': new_host['sid']}}
+                        )
+                        
+                        emit('new_host', {'sid': new_host['sid']}, room=room_code)
+                        emit('system_message', {
+                            'text': f'Host rights transferred to {new_host["username"]} due to inactivity.'
+                        }, room=room_code)
+                        host_changed = True
+                        
+                    # Notify about removals
+                    for username in expired_usernames:
+                         emit('system_message', {
+                            'text': f'{username} was removed due to inactivity.'
+                        }, room=room_code)
+
+                    # Send updated list
+                    user_list = []
+                    for m in updated_room['members']:
+                        is_active = m.get('status', 'active') == 'active'
+                        user_list.append({
+                            'username': m['username'],
+                            'is_host': m['sid'] == updated_room['host_sid'], # Use new host sid if changed
+                            'is_active': is_active
+                        })
+                    emit('update_user_list', user_list, room=room_code)
+                    
+        except Exception as e:
+            print(f"Error in grace period checker: {e}")
+
+# Start background thread
+bg_thread = threading.Thread(target=check_grace_periods, daemon=True)
+bg_thread.start()
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=8000, debug=True)
