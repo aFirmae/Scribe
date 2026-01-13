@@ -25,8 +25,8 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 # MongoDB setup
-MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/')
-DATABASE_NAME = os.getenv('DATABASE_NAME', 'scribe_chat')
+MONGODB_URI = os.getenv('MONGODB_URI')
+DATABASE_NAME = 'scribe_chat'
 
 client = MongoClient(MONGODB_URI)
 db = client[DATABASE_NAME]

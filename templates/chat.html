@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat Room - Scribe</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -86,7 +87,7 @@
     </style>
 </head>
 
-<body class="gradient-bg h-screen overflow-hidden text-gray-100">
+<body class="gradient-bg h-[100dvh] overflow-hidden text-gray-100">
 
     <!-- Mobile Menu Toggle -->
     <button id="mobileMenuBtn"
@@ -95,7 +96,7 @@
     </button>
 
     <!-- Main Container -->
-    <div class="flex h-screen">
+    <div class="flex h-[100dvh]">
 
         <!-- Sidebar - Desktop: static, Mobile: overlay -->
         <div id="sidebar"
@@ -184,14 +185,14 @@
         <div id="sidebarOverlay" class="lg:hidden hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-30 transition-opacity"></div>
 
         <!-- Main Chat Area -->
-        <div class="flex-1 flex flex-col h-screen relative">
+        <div class="flex-1 flex flex-col h-[100dvh] relative">
             
             <!-- Chat Header (Mobile only) -->
             <div class="lg:hidden bg-gray-800/80 backdrop-blur-md p-4 pl-20 border-b border-gray-700/50 flex flex-col justify-center">
                 <h2 id="roomNameMobile" class="text-lg font-semibold truncate leading-tight"></h2>
                 <div class="flex items-center text-xs text-gray-400 mt-1">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
-                    <span id="userCountMobile">0</span> participants
+                    <span id="userCountMobile">0</span>&nbsp;participant(s)
                 </div>
             </div>
 
@@ -273,20 +274,24 @@
         socket = io();
 
         // Mobile sidebar toggle
-        document.getElementById('mobileMenuBtn').addEventListener('click', () => {
-            document.getElementById('sidebar').classList.add('open');
-            document.getElementById('sidebarOverlay').classList.remove('hidden');
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        mobileMenuBtn.addEventListener('click', () => {
+            sidebar.classList.add('open');
+            sidebarOverlay.classList.remove('hidden');
+            mobileMenuBtn.classList.add('hidden');
         });
 
-        document.getElementById('closeSidebarBtn').addEventListener('click', () => {
-            document.getElementById('sidebar').classList.remove('open');
-            document.getElementById('sidebarOverlay').classList.add('hidden');
-        });
+        function closeSidebar() {
+            sidebar.classList.remove('open');
+            sidebarOverlay.classList.add('hidden');
+            mobileMenuBtn.classList.remove('hidden');
+        }
 
-        document.getElementById('sidebarOverlay').addEventListener('click', () => {
-            document.getElementById('sidebar').classList.remove('open');
-            document.getElementById('sidebarOverlay').classList.add('hidden');
-        });
+        document.getElementById('closeSidebarBtn').addEventListener('click', closeSidebar);
+        document.getElementById('sidebarOverlay').addEventListener('click', closeSidebar);
 
         // Auto-grow textarea
         const messageInput = document.getElementById('messageInput');
