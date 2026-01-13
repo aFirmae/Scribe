@@ -88,6 +88,7 @@ def create_room():
             'room_name': f"{username}'s Room",
             'host_sid': None,  # Will be set when host connects via socket
             'members': [],
+            'messages': [],  # Store chat history
             'is_code_visible': False,
             'created_at': datetime.now(TIMEZONE),
             'last_active_at': datetime.now(TIMEZONE)
@@ -292,6 +293,10 @@ def handle_join_room(data):
                     'seconds_left': remaining
                 }, room=request.sid) # Send only to the joining user
         
+        # Send chat history (last 50 messages)
+        history = updated_room.get('messages', [])[-50:]
+        emit('chat_history', history)
+
         # Notify others
         if is_reconnect:
              emit('system_message', {
@@ -351,6 +356,16 @@ def handle_send_message(data):
             'timestamp': datetime.now(TIMEZONE).isoformat(),
             'is_own': False
         }
+        
+        # Save to database
+        rooms_collection.update_one(
+            {'room_code': room_code},
+            {'$push': {'messages': {
+                'username': sender['username'],
+                'message': message,
+                'timestamp': message_data['timestamp']
+            }}}
+        )
         
         emit('receive_message', message_data, room=room_code, skip_sid=request.sid)
         

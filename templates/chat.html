@@ -196,7 +196,7 @@
             </div>
 
             <!-- Messages Container -->
-            <div id="messagesContainer" class="flex-1 overflow-y-auto custom-scrollbar p-4 lg:p-6 space-y-6">
+            <div id="messagesContainer" class="flex-1 overflow-y-auto custom-scrollbar p-4 lg:p-6 space-y-6 pb-96">
                 <!-- Grace Period Banner -->
                 <div id="gracePeriodBanner" class="hidden bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 px-4 py-3 rounded-xl mb-4 flex items-center justify-between">
                     <div class="flex items-center">
@@ -213,15 +213,15 @@
 
             <!-- Message Input -->
             <div class="px-4 pb-4 pt-2">
-                <div class="max-w-3xl mx-auto bg-gray-800/80 backdrop-blur-md border border-gray-700/50 rounded-full pl-4 pr-1.5 py-1.5 shadow-2xl flex items-center">
-                    <form id="messageForm" class="flex-1 flex items-center space-x-2">
-                        <div class="flex-1 relative">
+                <div class="max-w-3xl mx-auto bg-gray-800/80 backdrop-blur-md border border-gray-700/50 rounded-2xl pl-4 pr-1.5 py-2 shadow-2xl flex items-end">
+                    <form id="messageForm" class="flex-1 flex items-end space-x-2">
+                        <div class="flex-1 relative my-1">
                             <textarea id="messageInput" placeholder="Type a message..."
-                                class="message-input w-full bg-transparent text-gray-100 placeholder-gray-500 border-none outline-none resize-none leading-normal text-sm flex items-center py-2"
-                                rows="1" style="min-height: 40px; height: 40px;"></textarea>
+                                class="message-input w-full bg-transparent text-gray-100 placeholder-gray-500 border-none outline-none resize-none leading-relaxed text-sm flex items-center custom-scrollbar"
+                                rows="1" style="min-height: 24px; height: 24px; max-height: 150px;"></textarea>
                         </div>
                         <button type="submit"
-                            class="w-8 h-8 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full shadow-lg transition-all flex items-center justify-center flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95"
+                            class="w-8 h-8 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-lg transition-all flex items-center justify-center flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95 mb-0.5"
                             id="sendBtn">
                             <i class="fas fa-paper-plane text-xs translate-x-px translate-y-px"></i>
                         </button>
@@ -292,7 +292,7 @@
         const messageInput = document.getElementById('messageInput');
         messageInput.addEventListener('input', function () {
             this.style.height = 'auto';
-            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+            this.style.height = Math.min(this.scrollHeight, 150) + 'px';
         });
 
         // Handle Enter key (send message) and Shift+Enter (new line)

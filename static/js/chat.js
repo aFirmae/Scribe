@@ -81,10 +81,26 @@ socket.on('update_user_list', (users) => {
     document.getElementById('userCountMobile').textContent = users.length;
 });
 
+// Handle chat history
+socket.on('chat_history', (messages) => {
+    console.log('Received chat history:', messages.length);
+    // Don't clear container here as it might wipe system messages or banners
+    // But usually history comes first or early.
+    
+    // Check if we need to clear previous "history" messages to avoid dupes on reconnect
+    // For now, let's just append. Reconnect might duplicate if we are not careful.
+    // Ideally clear messagesContainer but keep banner.
+    
+    messages.forEach(msg => {
+        msg.is_own = (msg.username === username);
+        addMessage(msg, false); // false = no animation for history
+    });
+});
+
 // Handle incoming messages
 socket.on('receive_message', (data) => {
     console.log('Message received:', data);
-    addMessage(data);
+    addMessage(data, true);
 });
 
 // Handle system messages
@@ -172,7 +188,7 @@ document.getElementById('messageForm').addEventListener('submit', (e) => {
 
     // Clear input
     messageInput.value = '';
-    messageInput.style.height = 'auto';
+    messageInput.style.height = '24px';
     messageInput.focus();
 });
 
@@ -244,10 +260,10 @@ document.getElementById('deleteRoomBtn').addEventListener('click', () => {
 
 // UI Helper Functions
 
-function addMessage(data) {
+function addMessage(data, animate = true) {
     const messagesContainer = document.getElementById('messagesContainer');
     const messageDiv = document.createElement('div');
-    messageDiv.className = 'message-enter';
+    messageDiv.className = animate ? 'message-enter' : '';
 
     const isOwn = data.is_own;
     const alignment = isOwn ? 'justify-end' : 'justify-start';
@@ -262,8 +278,8 @@ function addMessage(data) {
         <div class="flex ${alignment} mb-2">
             <div class="max-w-[70%] ${isOwn ? 'order-2' : 'order-1'}">
                 ${!isOwn ? `<p class="text-xs font-medium text-emerald-500 mb-1 ml-2">${escapeHtml(data.username)}</p>` : ''}
-                <div class="${isOwn ? 'bg-emerald-600 text-white shadow-lg' : 'bg-gray-700/50 text-gray-200 border border-gray-600/30'} rounded-2xl px-4 py-2.5 shadow-sm">
-                    <p class="text-sm whitespace-pre-wrap break-words leading-relaxed">${escapeHtml(data.message)}</p>
+                <div class="${isOwn ? 'bg-emerald-600 text-white shadow-lg' : 'bg-gray-700/50 text-gray-200 border border-gray-600/30'} rounded-2xl px-4 py-2.5 shadow-sm overflow-hidden">
+                    <p class="text-sm whitespace-pre-wrap leading-relaxed" style="overflow-wrap: anywhere;">${escapeHtml(data.message)}</p>
                 </div>
                 <p class="text-[10px] text-gray-500 mt-1 ${isOwn ? 'text-right' : 'text-left'} ${isOwn ? 'mr-2' : 'ml-2'}">
                     ${timestamp}
