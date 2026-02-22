@@ -1,0 +1,29 @@
+name: Hourly Room Cleanup
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  
+  # Manual Runs
+  workflow_dispatch:
+
+jobs:
+  cleanup-database:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          
+      - name: Install Dependencies
+        run: pip install pymongo python-dotenv
+
+      - name: Run Cleanup Script
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        run: python cleanup.py
